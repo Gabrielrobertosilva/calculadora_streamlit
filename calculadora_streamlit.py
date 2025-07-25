@@ -26,7 +26,7 @@ def calcular_detalhado(salario, plr, ajuste_percentual):
         "Férias": ferias_12,
         "1/3 Férias": um_terco_ferias,
         "13º": decimo_terceiro,
-        "PLR": plr_12,
+        "PLR (mensalizada)": plr_12,
         "VA/VR": va_vr,
         "Assist. Médica": assist_medica,
         "INSS": inss,
@@ -47,7 +47,12 @@ ajuste = st.sidebar.number_input("Ajuste de salário (%)", min_value=0.0, step=1
 
 if st.sidebar.button("Adicionar colaborador"):
     if nome:
-        st.session_state.colaboradores.append({"Nome": nome, "Salário": salario, "PLR": plr, "Ajuste (%)": ajuste})
+        st.session_state.colaboradores.append({
+            "Nome": nome,
+            "Salário Base": salario,
+            "PLR Anual": plr,
+            "Ajuste (%)": ajuste
+        })
     else:
         st.sidebar.warning("Por favor, insira o nome do colaborador.")
 
@@ -57,9 +62,9 @@ arquivo = st.file_uploader("Importar colaboradores (xlsx)", type=["xlsx"])
 
 if arquivo:
     df_upload = pd.read_excel(arquivo)
-    obrigatorias = {"Nome", "Salário", "PLR", "Ajuste (%)"}
+    obrigatorias = {"Nome", "Salário Base", "PLR Anual", "Ajuste (%)"}
     if obrigatorias.issubset(set(df_upload.columns)):
-        novos = df_upload[["Nome", "Salário", "PLR", "Ajuste (%)"]].to_dict(orient="records")
+        novos = df_upload[["Nome", "Salário Base", "PLR Anual", "Ajuste (%)"]].to_dict(orient="records")
         st.session_state.colaboradores.extend(novos)
         st.success("Colaboradores importados com sucesso!")
     else:
@@ -71,10 +76,15 @@ if st.session_state.colaboradores:
 
     detalhes = []
     for i, row in df_base.iterrows():
-        resultado = calcular_detalhado(row["Salário"], row["PLR"], row["Ajuste (%)"])
+        resultado = calcular_detalhado(row["Salário Base"], row["PLR Anual"], row["Ajuste (%)"])
         detalhes.append(resultado)
 
     df_detalhado = pd.DataFrame(detalhes)
+
+    # ✅ Renomeia colunas duplicadas, se necessário
+    colunas_duplicadas = [col for col in df_detalhado.columns if col in df_base.columns]
+    df_detalhado.rename(columns={col: f"{col} (calc)" for col in colunas_duplicadas}, inplace=True)
+
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     st.subheader("📋 Tabela de colaboradores com custo detalhado")
@@ -95,7 +105,10 @@ if st.session_state.colaboradores:
 
     # Gráfico de pizza
     st.subheader("📊 Distribuição do custo total da equipe")
-    resumo = df_final[["Salário Ajustado", "Férias", "1/3 Férias", "13º", "PLR", "VA/VR", "Assist. Médica", "INSS", "FGTS"]].sum()
+    resumo = df_final[[
+        "Salário Ajustado", "Férias", "1/3 Férias", "13º",
+        "PLR (mensalizada)", "VA/VR", "Assist. Médica", "INSS", "FGTS"
+    ]].sum()
     st.pyplot(resumo.plot.pie(autopct="%1.1f%%", figsize=(7, 7), title="Custo total por componente").figure)
 
     # Exportar Excel
