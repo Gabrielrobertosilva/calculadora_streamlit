@@ -7,6 +7,13 @@ import io
 st.set_page_config(page_title="Calculadora de Custo do Colaborador", layout="wide")
 st.title("💼 Calculadora de Custo do Colaborador")
 
+# Carrega nomes sugeridos do Excel externo
+try:
+    nomes_df = pd.read_excel("lista_nomes.xlsx")
+    nomes_sugeridos = nomes_df["Nome da Pessoa"].dropna().astype(str).tolist()
+except Exception:
+    nomes_sugeridos = []
+
 # Função de cálculo detalhado
 def calcular_detalhado(salario, plr, ajuste_percentual):
     salario_ajustado = salario * (1 + ajuste_percentual / 100)
@@ -40,8 +47,18 @@ if "colaboradores" not in st.session_state:
     st.session_state.colaboradores = []
 
 # Sidebar para inclusão manual
-st.sidebar.subheader("➕ Adicionar colaborador manualmente")
-nome = st.sidebar.text_input("Nome")
+st.sidebar.subheader("➕ Adicionar colaborador")
+
+# Campo de nome com sugestão via Excel
+if nomes_sugeridos:
+    nome_sel = st.sidebar.selectbox("Nome do colaborador", options=nomes_sugeridos + ["Outro"])
+    if nome_sel == "Outro":
+        nome = st.sidebar.text_input("Digite o nome completo")
+    else:
+        nome = nome_sel
+else:
+    nome = st.sidebar.text_input("Digite o nome do colaborador")
+
 salario = st.sidebar.number_input("Salário (R$)", min_value=0.0, step=1000.0, format="%.2f")
 plr = st.sidebar.number_input("PLR Anual (R$)", min_value=0.0, step=1000.0, format="%.2f")
 ajuste = st.sidebar.number_input("Ajuste de salário (%)", min_value=0.0, step=1.0, format="%.1f")
@@ -88,21 +105,17 @@ if st.session_state.colaboradores:
 
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
-    st.subheader("📋 Tabela de colaboradores com custo detalhado")
+    st.subheader("📋 Lista de colaboradores")
 
-    # ✅ Formatação segura
-    df_formatado = df_final.copy()
-    colunas_valores = df_formatado.select_dtypes(include=['float', 'int']).columns
-
-    for col in colunas_valores:
-        def formatar_valor(x):
-            try:
-                return f"R$ {x:,.2f}"
-            except:
-                return x
-        df_formatado[col] = df_formatado[col].apply(formatar_valor)
-
-    st.dataframe(df_formatado, use_container_width=True)
+    # Exibir colaboradores com botão de exclusão
+    for i, row in df_final.iterrows():
+        cols = st.columns([6, 1])
+        with cols[0]:
+            st.markdown(f"**{row['Nome']}** – Total Mensal: R$ {row['Total Mensal']:,.2f}")
+        with cols[1]:
+            if st.button("🗑️", key=f"delete_{i}"):
+                st.session_state.colaboradores.pop(i)
+                st.experimental_rerun()
 
     # Gráfico de barras horizontal
     st.subheader("📊 Distribuição do custo total da equipe")
