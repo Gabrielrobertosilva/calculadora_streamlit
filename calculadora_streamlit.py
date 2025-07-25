@@ -33,6 +33,8 @@ def calcular_detalhado(salario, plr, ajuste_percentual):
     fgts = base_encargos * 0.08
 
     custo_mensal = salario_ajustado + ferias_12 + um_terco_ferias + decimo_terceiro + plr_12 + va_vr + assist_medica + inss + fgts
+    custo_anual = custo_mensal * 12
+
     return {
         "Salário Ajustado": salario_ajustado,
         "Férias": ferias_12,
@@ -43,7 +45,8 @@ def calcular_detalhado(salario, plr, ajuste_percentual):
         "Assist. Médica": assist_medica,
         "INSS": inss,
         "FGTS": fgts,
-        "Total Mensal": custo_mensal
+        "Total Mensal": custo_mensal,
+        "Total Anual": custo_anual
     }
 
 # Sidebar para inclusão manual
@@ -109,9 +112,9 @@ if st.session_state.colaboradores:
     for i, row in df_final.iterrows():
         col1, col2 = st.columns([10, 1])
         with col1:
-            st.markdown(f"**{row['Nome']}** – R$ {row['Total Mensal']:,.2f}")
+            st.markdown(f"**{row['Nome']}** – R$ {row['Total Mensal']:,.2f} / Ano: R$ {row['Total Anual']:,.2f}")
         with col2:
-            if st.button("🗑️", key=f"del_{i}"):
+            if st.button("-", key=f"del_{i}"):
                 indice_para_excluir = i
 
     if indice_para_excluir is not None:
