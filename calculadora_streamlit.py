@@ -79,6 +79,14 @@ if st.sidebar.button("Adicionar colaborador"):
 
 # Upload de planilha
 st.subheader("📄 Ou envie uma planilha Excel com os dados")
+st.markdown("Exemplo de colunas esperadas na planilha:")
+st.dataframe(pd.DataFrame({
+    "Nome": ["João Silva", "Maria Souza"],
+    "Salário Base": [12000, 9500],
+    "PLR Anual": [18000, 15000],
+    "Ajuste (%)": [5, 0]
+}))
+
 arquivo = st.file_uploader("Importar colaboradores (xlsx)", type=["xlsx"])
 
 if arquivo:
