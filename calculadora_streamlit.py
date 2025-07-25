@@ -112,9 +112,9 @@ if st.session_state.colaboradores:
     for i, row in df_final.iterrows():
         col1, col2 = st.columns([10, 1])
         with col1:
-            st.markdown(f"**{row['Nome']}** – R$ {row['Total Mensal']:,.2f} / Ano: R$ {row['Total Anual']:,.2f}")
+            st.markdown(f"**{row['Nome']}** – Total Mensal: R${row['Total Mensal']:,.2f} | Total Anual: R${row['Total Anual']:,.2f}")
         with col2:
-            if st.button("-", key=f"del_{i}"):
+            if st.button("➖", key=f"del_{i}"):
                 indice_para_excluir = i
 
     if indice_para_excluir is not None:
@@ -127,7 +127,7 @@ if st.session_state.colaboradores:
     for col in df_formatado.columns:
         if df_formatado[col].dtype in ["float64", "int64"]:
             df_formatado[col] = df_formatado[col].apply(
-                lambda x: f"R$ {x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
+                lambda x: f"R${x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
             )
     st.dataframe(df_formatado, use_container_width=True)
 
@@ -151,6 +151,6 @@ if st.session_state.colaboradores:
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
         df_final.to_excel(writer, index=False, sheet_name="Custo por Colaborador")
-    st.download_button("📅 Baixar Excel", data=buffer.getvalue(), file_name="custo_colaboradores.xlsx", mime="application/vnd.ms-excel")
+    st.download_button("📥 Baixar Excel", data=buffer.getvalue(), file_name="custo_colaboradores.xlsx", mime="application/vnd.ms-excel")
 else:
     st.info("Adicione colaboradores manualmente ou importe uma planilha para começar.")
