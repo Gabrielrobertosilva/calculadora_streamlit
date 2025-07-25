@@ -84,9 +84,12 @@ if st.session_state.colaboradores:
     colunas_valores = df_formatado.select_dtypes(include=['float', 'int']).columns
 
     for col in colunas_valores:
-        df_formatado[col] = df_formatado[col].apply(
-            lambda x: f"R$ {x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
-        )
+        def formatar_valor(x):
+            try:
+                return f"R$ {x:,.2f}"
+            except:
+                return x
+        df_formatado[col] = df_formatado[col].apply(formatar_valor)
 
     st.dataframe(df_formatado, use_container_width=True)
 
