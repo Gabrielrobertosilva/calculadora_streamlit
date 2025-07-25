@@ -110,9 +110,12 @@ if st.session_state.colaboradores:
     # Exclusão segura
     indice_para_excluir = None
     for i, row in df_final.iterrows():
-        col1, col2 = st.columns([10, 1])
+        col1, col2 = st.columns([6, 1])
         with col1:
-            st.write(f"**{row['Nome']}** – Total Mensal: R${row['Total Mensal']:,.2f} | Total Anual: R${row['Total Anual']:,.2f}")
+            st.markdown(
+                f"**{row['Nome']}** – Total Mensal: **R\${row['Total Mensal']:,.2f}** | Total Anual: **R\${row['Total Anual']:,.2f}**",
+                unsafe_allow_html=False
+            )
         with col2:
             if st.button("➖", key=f"del_{i}"):
                 indice_para_excluir = i
