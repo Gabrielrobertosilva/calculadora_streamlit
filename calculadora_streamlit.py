@@ -2,11 +2,11 @@ import streamlit as st
 import pandas as pd
 import io
 
-# Configurações da página
+# Configuração da página
 st.set_page_config(page_title="Calculadora de Custo do Colaborador", layout="wide")
 st.title("💼 Calculadora de Custo do Colaborador")
 
-# Função de cálculo detalhado por colaborador
+# Função de cálculo detalhado
 def calcular_detalhado(salario, plr, ajuste_percentual):
     salario_ajustado = salario * (1 + ajuste_percentual / 100)
     ferias_12 = salario_ajustado / 12
@@ -38,7 +38,7 @@ def calcular_detalhado(salario, plr, ajuste_percentual):
 if "colaboradores" not in st.session_state:
     st.session_state.colaboradores = []
 
-# Sidebar para adicionar manualmente
+# Sidebar para inclusão manual
 st.sidebar.subheader("➕ Adicionar colaborador manualmente")
 nome = st.sidebar.text_input("Nome")
 salario = st.sidebar.number_input("Salário (R$)", min_value=0.0, step=1000.0, format="%.2f")
@@ -51,7 +51,7 @@ if st.sidebar.button("Adicionar colaborador"):
     else:
         st.sidebar.warning("Por favor, insira o nome do colaborador.")
 
-# Upload de Excel
+# Upload de planilha
 st.subheader("📤 Ou envie uma planilha Excel com os dados")
 arquivo = st.file_uploader("Importar colaboradores (xlsx)", type=["xlsx"])
 
@@ -65,7 +65,7 @@ if arquivo:
     else:
         st.error(f"A planilha deve conter as colunas: {obrigatorias}")
 
-# Exibir colaboradores adicionados
+# Exibir resultados
 if st.session_state.colaboradores:
     df_base = pd.DataFrame(st.session_state.colaboradores)
 
@@ -79,21 +79,23 @@ if st.session_state.colaboradores:
 
     st.subheader("📋 Tabela de colaboradores com custo detalhado")
 
-    # Formatar valores monetários corretamente
+    # ✅ Formatação segura
     df_formatado = df_final.copy()
     colunas_valores = df_formatado.select_dtypes(include=['float', 'int']).columns
 
     for col in colunas_valores:
-        df_formatado[col] = df_formatado[col].apply(lambda x: f"R$ {x:,.2f}")
+        df_formatado[col] = df_formatado[col].apply(
+            lambda x: f"R$ {x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
+        )
 
     st.dataframe(df_formatado, use_container_width=True)
 
-    # Gráfico
+    # Gráfico de pizza
     st.subheader("📊 Distribuição do custo total da equipe")
     resumo = df_final[["Salário Ajustado", "Férias", "1/3 Férias", "13º", "PLR", "VA/VR", "Assist. Médica", "INSS", "FGTS"]].sum()
     st.pyplot(resumo.plot.pie(autopct="%1.1f%%", figsize=(7, 7), title="Custo total por componente").figure)
 
-    # Exportação para Excel
+    # Exportar Excel
     st.subheader("⬇️ Exportar resultado")
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
