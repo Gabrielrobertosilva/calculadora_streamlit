@@ -72,7 +72,14 @@ if st.session_state.colaboradores:
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     st.subheader("📋 Tabela de colaboradores com custo detalhado")
-    st.dataframe(df_final.style.format("R$ {:,.2f}"), use_container_width=True)
+
+    df_formatado = df_final.copy()
+    colunas_valores = df_formatado.select_dtypes(include=['float', 'int']).columns
+
+    for col in colunas_valores:
+    df_formatado[col] = df_formatado[col].apply(lambda x: f"R$ {x:,.2f}")
+
+    st.dataframe(df_formatado, use_container_width=True)
 
     st.subheader("📊 Distribuição do custo total da equipe")
     resumo = df_final[["Salário Ajustado", "Férias", "1/3 Férias", "13º", "PLR", "VA/VR", "Assist. Médica", "INSS", "FGTS"]].sum()
