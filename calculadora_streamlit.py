@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 import io
 
 # Configuração da página
@@ -103,13 +104,20 @@ if st.session_state.colaboradores:
 
     st.dataframe(df_formatado, use_container_width=True)
 
-    # Gráfico de pizza
+    # Gráfico de barras horizontal
     st.subheader("📊 Distribuição do custo total da equipe")
     resumo = df_final[[
         "Salário Ajustado", "Férias", "1/3 Férias", "13º",
         "PLR (mensalizada)", "VA/VR", "Assist. Médica", "INSS", "FGTS"
     ]].sum()
-    st.pyplot(resumo.plot.pie(autopct="%1.1f%%", figsize=(7, 7), title="Custo total por componente").figure)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    resumo.sort_values().plot(kind="barh", ax=ax)
+    ax.set_title("Distribuição do custo total por componente")
+    ax.set_xlabel("Custo (R$)")
+    ax.set_ylabel("Componente")
+    ax.grid(axis="x", linestyle="--", alpha=0.7)
+    st.pyplot(fig)
 
     # Exportar Excel
     st.subheader("⬇️ Exportar resultado")
