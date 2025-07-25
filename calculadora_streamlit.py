@@ -112,7 +112,7 @@ if st.session_state.colaboradores:
     for i, row in df_final.iterrows():
         col1, col2 = st.columns([10, 1])
         with col1:
-            st.markdown(f"<b>{row['Nome']}</b> – <span style='font-weight:normal;'>Total Mensal: R${row['Total Mensal']:,.2f} | Total Anual: R${row['Total Anual']:,.2f}</span>", unsafe_allow_html=True)
+            st.write(f"**{row['Nome']}** – Total Mensal: R${row['Total Mensal']:,.2f} | Total Anual: R${row['Total Anual']:,.2f}")
         with col2:
             if st.button("➖", key=f"del_{i}"):
                 indice_para_excluir = i
