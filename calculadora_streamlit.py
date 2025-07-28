@@ -121,7 +121,7 @@ if st.session_state.colaboradores:
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     # Exclusão segura
-    indice_para_excluir = None
+    indices_para_manter = []
     for i, row in df_final.iterrows():
         col1, col2 = st.columns([6, 1])
         with col1:
@@ -131,11 +131,11 @@ if st.session_state.colaboradores:
             )
         with col2:
             if st.button("➖", key=f"del_{i}"):
-                indice_para_excluir = i
+                continue
+            indices_para_manter.append(i)
 
-    if indice_para_excluir is not None:
-        st.session_state.colaboradores.pop(indice_para_excluir)
-        st.rerun()
+    df_final = df_final.iloc[indices_para_manter].reset_index(drop=True)
+    st.session_state.colaboradores = df_base.iloc[indices_para_manter].to_dict(orient="records")
 
     # Tabela detalhada
     st.subheader("📋 Detalhamento do custo por colaborador")
@@ -146,6 +146,13 @@ if st.session_state.colaboradores:
                 lambda x: f"R${x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
             )
     st.dataframe(df_formatado, use_container_width=True)
+
+    # Total geral
+    st.subheader("💰 Total")
+    total_mensal = df_final["Total Mensal"].sum()
+    total_anual = df_final["Total Anual"].sum()
+    st.markdown(f"**Total Mensal da Equipe:** R\${total_mensal:,.2f}  ")
+    st.markdown(f"**Total Anual da Equipe:** R\${total_anual:,.2f}")
 
     # Gráfico
     st.subheader("📊 Distribuição do custo total da equipe")
