@@ -123,8 +123,6 @@ if st.session_state.colaboradores:
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     # Exclusão segura com controle
-    excluir_index = st.session_state.excluir_index
-    manter_indices = []
     for i in df_final.index:
         col1, col2 = st.columns([6, 1])
         with col1:
@@ -135,12 +133,12 @@ if st.session_state.colaboradores:
         with col2:
             if st.button("➖", key=f"del_{i}"):
                 st.session_state.excluir_index = i
-                st.experimental_rerun()
 
     if st.session_state.excluir_index != -1:
         df_final = df_final.drop(index=st.session_state.excluir_index).reset_index(drop=True)
         st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
         st.session_state.excluir_index = -1
+        st.experimental_rerun()
 
     # Total geral (adicionado como linha da tabela)
     total_row = pd.DataFrame({
