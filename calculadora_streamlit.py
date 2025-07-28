@@ -120,9 +120,10 @@ if st.session_state.colaboradores:
 
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
-    # Exclusão segura
-    excluir_indices = []
-    for i in range(len(df_final)):
+    # Exclusão segura com controle
+    excluir_index = st.session_state.get("excluir_index", -1)
+    manter_indices = []
+    for i in df_final.index:
         col1, col2 = st.columns([6, 1])
         with col1:
             st.markdown(
@@ -131,16 +132,18 @@ if st.session_state.colaboradores:
             )
         with col2:
             if st.button("➖", key=f"del_{i}"):
-                excluir_indices.append(i)
+                excluir_index = i
 
-    if excluir_indices:
-        df_final.drop(index=excluir_indices, inplace=True)
-        df_final.reset_index(drop=True, inplace=True)
+    if excluir_index != -1:
+        df_final = df_final.drop(index=excluir_index).reset_index(drop=True)
         st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
-        st.rerun()
+        st.session_state.excluir_index = -1
+        st.experimental_rerun()
 
     # Total geral (adicionado como linha da tabela)
-    total_row = pd.DataFrame({col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["Total Geral"] for col in df_final.columns})
+    total_row = pd.DataFrame({
+        col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["**Total Geral**"] for col in df_final.columns
+    })
     df_tabela = pd.concat([df_final, total_row], ignore_index=True)
 
     st.subheader("📋 Detalhamento do custo por colaborador")
