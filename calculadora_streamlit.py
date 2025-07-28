@@ -10,17 +10,6 @@ st.title("💼 Calculadora de Custo do Colaborador")
 # Inicializa a sessão
 if "colaboradores" not in st.session_state:
     st.session_state.colaboradores = []
-if "excluir_index" not in st.session_state:
-    st.session_state.excluir_index = -1
-
-# Apaga colaborador se solicitado
-if st.session_state.excluir_index != -1:
-    st.session_state.colaboradores = [
-        colab for idx, colab in enumerate(st.session_state.colaboradores)
-        if idx != st.session_state.excluir_index
-    ]
-    st.session_state.excluir_index = -1
-    st.rerun()
 
 # Função de cálculo detalhado
 def calcular_detalhado(salario, ajuste_percentual):
@@ -118,7 +107,8 @@ if arquivo:
 st.subheader("📋 Detalhamento do custo por colaborador")
 
 colaboradores_processados = []
-for i, colab in enumerate(st.session_state.colaboradores):
+for i in range(len(st.session_state.colaboradores)):
+    colab = st.session_state.colaboradores[i]
     resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
     colab_resultado = {**colab, **resultado}
     colaboradores_processados.append(colab_resultado)
@@ -130,8 +120,10 @@ for i, colab in enumerate(st.session_state.colaboradores):
             unsafe_allow_html=False
         )
     with col2:
-        if st.button("➖", key=f"del_{i}"):
-            st.session_state.excluir_index = i
+        if st.button("➖", key=f"excluir_{i}"):
+            del st.session_state.colaboradores[i]
+            st.experimental_rerun()
+            break
 
 # Tabela com totais
 if colaboradores_processados:
