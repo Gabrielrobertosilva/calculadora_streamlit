@@ -141,7 +141,6 @@ if st.session_state.colaboradores:
         df_final = df_final.drop(index=st.session_state.excluir_index).reset_index(drop=True)
         st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
         st.session_state.excluir_index = -1
-        st.experimental_rerun()
 
     # Total geral (adicionado como linha da tabela)
     total_row = pd.DataFrame({
