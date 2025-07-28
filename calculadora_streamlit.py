@@ -120,8 +120,8 @@ if st.session_state.colaboradores:
     df_base = pd.DataFrame(st.session_state.colaboradores)
 
     detalhes = []
-    for i, row in df_base.iterrows():
-        resultado = calcular_detalhado(row["Salário Base"], row["Ajuste (%)"])
+    for colab in st.session_state.colaboradores:
+        resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
         detalhes.append(resultado)
 
     df_detalhado = pd.DataFrame(detalhes)
@@ -131,12 +131,16 @@ if st.session_state.colaboradores:
 
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
-    # Exclusão segura com controle
-    for i in df_final.index:
+    # Exibir cada colaborador com botão de exclusão correto
+    for i, colab in enumerate(st.session_state.colaboradores):
+        resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
+        total_mensal = resultado["Total Mensal"]
+        total_anual = resultado["Total Anual"]
+
         col1, col2 = st.columns([6, 1])
         with col1:
             st.markdown(
-                f"**{df_final.loc[i, 'Nome']}** – Total Mensal: **R\${df_final.loc[i, 'Total Mensal']:,.2f}** | Total Anual: **R\${df_final.loc[i, 'Total Anual']:,.2f}**",
+                f"**{colab['Nome']}** – Total Mensal: **R\${total_mensal:,.2f}** | Total Anual: **R\${total_anual:,.2f}**",
                 unsafe_allow_html=False
             )
         with col2:
