@@ -19,8 +19,9 @@ except Exception:
     nomes_sugeridos = []
 
 # Função de cálculo detalhado
-def calcular_detalhado(salario, plr, ajuste_percentual):
+def calcular_detalhado(salario, ajuste_percentual):
     salario_ajustado = salario * (1 + ajuste_percentual / 100)
+    plr = min(salario_ajustado * 2.2, 37000)
     ferias_12 = salario_ajustado / 12
     um_terco_ferias = ferias_12 / 3
     decimo_terceiro = salario_ajustado / 12
@@ -41,6 +42,7 @@ def calcular_detalhado(salario, plr, ajuste_percentual):
         "1/3 Férias": um_terco_ferias,
         "13º": decimo_terceiro,
         "PLR (mensalizada)": plr_12,
+        "PLR Anual": plr,
         "VA/VR": va_vr,
         "Assist. Médica": assist_medica,
         "INSS": inss,
@@ -63,17 +65,19 @@ else:
     nome = st.sidebar.text_input("Digite o nome do colaborador")
 
 salario = st.sidebar.number_input("Salário (R$)", min_value=0.0, step=1000.0, format="%.2f")
-plr = st.sidebar.number_input("PLR Anual (R$)", min_value=0.0, step=1000.0, format="%.2f")
 ajuste = st.sidebar.number_input("Ajuste de salário (%)", min_value=0.0, step=1.0, format="%.1f")
 
 if st.sidebar.button("Adicionar colaborador"):
     if nome:
-        st.session_state.colaboradores.append({
+        novo_colab = {
             "Nome": nome,
             "Salário Base": salario,
-            "PLR Anual": plr,
             "Ajuste (%)": ajuste
-        })
+        }
+        if novo_colab not in st.session_state.colaboradores:
+            st.session_state.colaboradores.append(novo_colab)
+        else:
+            st.sidebar.warning("Esse colaborador já foi adicionado.")
     else:
         st.sidebar.warning("Por favor, insira o nome do colaborador.")
 
@@ -83,7 +87,6 @@ st.markdown("Exemplo de colunas esperadas na planilha:")
 st.dataframe(pd.DataFrame({
     "Nome": ["João Silva", "Maria Souza"],
     "Salário Base": [12000, 9500],
-    "PLR Anual": [18000, 15000],
     "Ajuste (%)": [5, 0]
 }))
 
@@ -91,10 +94,12 @@ arquivo = st.file_uploader("Importar colaboradores (xlsx)", type=["xlsx"])
 
 if arquivo:
     df_upload = pd.read_excel(arquivo)
-    obrigatorias = {"Nome", "Salário Base", "PLR Anual", "Ajuste (%)"}
+    obrigatorias = {"Nome", "Salário Base", "Ajuste (%)"}
     if obrigatorias.issubset(set(df_upload.columns)):
-        novos = df_upload[["Nome", "Salário Base", "PLR Anual", "Ajuste (%)"]].to_dict(orient="records")
-        st.session_state.colaboradores.extend(novos)
+        novos = df_upload[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
+        for novo in novos:
+            if novo not in st.session_state.colaboradores:
+                st.session_state.colaboradores.append(novo)
         st.success("Colaboradores importados com sucesso!")
     else:
         st.error(f"A planilha deve conter as colunas: {obrigatorias}")
@@ -105,7 +110,7 @@ if st.session_state.colaboradores:
 
     detalhes = []
     for i, row in df_base.iterrows():
-        resultado = calcular_detalhado(row["Salário Base"], row["PLR Anual"], row["Ajuste (%)"])
+        resultado = calcular_detalhado(row["Salário Base"], row["Ajuste (%)"])
         detalhes.append(resultado)
 
     df_detalhado = pd.DataFrame(detalhes)
