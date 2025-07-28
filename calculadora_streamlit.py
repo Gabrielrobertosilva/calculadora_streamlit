@@ -121,38 +121,36 @@ if st.session_state.colaboradores:
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     # Exclusão segura
-    indices_para_manter = []
-    for i, row in df_final.iterrows():
+    excluir_indices = []
+    for i in range(len(df_final)):
         col1, col2 = st.columns([6, 1])
         with col1:
             st.markdown(
-                f"**{row['Nome']}** – Total Mensal: **R\${row['Total Mensal']:,.2f}** | Total Anual: **R\${row['Total Anual']:,.2f}**",
+                f"**{df_final.loc[i, 'Nome']}** – Total Mensal: **R\${df_final.loc[i, 'Total Mensal']:,.2f}** | Total Anual: **R\${df_final.loc[i, 'Total Anual']:,.2f}**",
                 unsafe_allow_html=False
             )
         with col2:
             if st.button("➖", key=f"del_{i}"):
-                continue
-            indices_para_manter.append(i)
+                excluir_indices.append(i)
 
-    df_final = df_final.iloc[indices_para_manter].reset_index(drop=True)
-    st.session_state.colaboradores = df_base.iloc[indices_para_manter].to_dict(orient="records")
+    if excluir_indices:
+        df_final.drop(index=excluir_indices, inplace=True)
+        df_final.reset_index(drop=True, inplace=True)
+        st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
+        st.rerun()
 
-    # Tabela detalhada
+    # Total geral (adicionado como linha da tabela)
+    total_row = pd.DataFrame({col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["Total Geral"] for col in df_final.columns})
+    df_tabela = pd.concat([df_final, total_row], ignore_index=True)
+
     st.subheader("📋 Detalhamento do custo por colaborador")
-    df_formatado = df_final.copy()
+    df_formatado = df_tabela.copy()
     for col in df_formatado.columns:
         if df_formatado[col].dtype in ["float64", "int64"]:
             df_formatado[col] = df_formatado[col].apply(
                 lambda x: f"R${x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
             )
     st.dataframe(df_formatado, use_container_width=True)
-
-    # Total geral
-    st.subheader("💰 Total")
-    total_mensal = df_final["Total Mensal"].sum()
-    total_anual = df_final["Total Anual"].sum()
-    st.markdown(f"**Total Mensal da Equipe:** R\${total_mensal:,.2f}  ")
-    st.markdown(f"**Total Anual da Equipe:** R\${total_anual:,.2f}")
 
     # Gráfico
     st.subheader("📊 Distribuição do custo total da equipe")
