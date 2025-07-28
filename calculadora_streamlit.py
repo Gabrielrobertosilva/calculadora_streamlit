@@ -11,23 +11,7 @@ st.title("💼 Calculadora de Custo do Colaborador")
 if "colaboradores" not in st.session_state:
     st.session_state.colaboradores = []
 if "excluir_index" not in st.session_state:
-    st.session_state.excluir_index = -1
-
-# Executa exclusão fora do loop
-if st.session_state.excluir_index != -1:
-    st.session_state.colaboradores = [
-        colab for idx, colab in enumerate(st.session_state.colaboradores)
-        if idx != st.session_state.excluir_index
-    ]
-    st.session_state.excluir_index = -1
-    st.rerun()
-
-# Carrega nomes sugeridos do Excel externo
-try:
-    nomes_df = pd.read_excel("lista_nomes.xlsx")
-    nomes_sugeridos = nomes_df["Nome da Pessoa"].dropna().astype(str).tolist()
-except Exception:
-    nomes_sugeridos = []
+    st.session_state.excluir_index = None
 
 # Função de cálculo detalhado
 def calcular_detalhado(salario, ajuste_percentual):
@@ -65,7 +49,13 @@ def calcular_detalhado(salario, ajuste_percentual):
 # Sidebar para inclusão manual
 st.sidebar.subheader("➕ Adicionar colaborador manualmente")
 
-# Campo de nome com sugestão via Excel
+# Carrega nomes sugeridos do Excel externo
+try:
+    nomes_df = pd.read_excel("lista_nomes.xlsx")
+    nomes_sugeridos = nomes_df["Nome da Pessoa"].dropna().astype(str).tolist()
+except Exception:
+    nomes_sugeridos = []
+
 if nomes_sugeridos:
     nome_sel = st.sidebar.selectbox("Nome do colaborador", options=nomes_sugeridos + ["Outro"])
     if nome_sel == "Outro":
@@ -115,45 +105,35 @@ if arquivo:
     else:
         st.error(f"A planilha deve conter as colunas: {obrigatorias}")
 
-# Exibir resultados
-if st.session_state.colaboradores:
-    df_base = pd.DataFrame(st.session_state.colaboradores)
+# Exibir colaboradores com botoes de exclusao
+st.subheader("📋 Detalhamento do custo por colaborador")
 
-    detalhes = []
-    for colab in st.session_state.colaboradores:
-        resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
-        detalhes.append(resultado)
+colaboradores_processados = []
+for i, colab in enumerate(st.session_state.colaboradores):
+    resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
+    colab_resultado = {**colab, **resultado}
+    colaboradores_processados.append(colab_resultado)
 
-    df_detalhado = pd.DataFrame(detalhes)
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown(
+            f"**{colab['Nome']}** – Total Mensal: **R\${resultado['Total Mensal']:,.2f}** | Total Anual: **R\${resultado['Total Anual']:,.2f}**",
+            unsafe_allow_html=False
+        )
+    with col2:
+        if st.button("➖", key=f"del_{i}"):
+            st.session_state.excluir_index = i
+            st.rerun()
 
-    colunas_duplicadas = [col for col in df_detalhado.columns if col in df_base.columns]
-    df_detalhado.rename(columns={col: f"{col} (calc)" for col in colunas_duplicadas}, inplace=True)
+# Tabela com totais
+if colaboradores_processados:
+    df_final = pd.DataFrame(colaboradores_processados)
 
-    df_final = pd.concat([df_base, df_detalhado], axis=1)
-
-    # Exibir cada colaborador com botão de exclusão correto
-    for i, colab in enumerate(st.session_state.colaboradores):
-        resultado = calcular_detalhado(colab["Salário Base"], colab["Ajuste (%)"])
-        total_mensal = resultado["Total Mensal"]
-        total_anual = resultado["Total Anual"]
-
-        col1, col2 = st.columns([6, 1])
-        with col1:
-            st.markdown(
-                f"**{colab['Nome']}** – Total Mensal: **R\${total_mensal:,.2f}** | Total Anual: **R\${total_anual:,.2f}**",
-                unsafe_allow_html=False
-            )
-        with col2:
-            if st.button("➖", key=f"del_{i}"):
-                st.session_state.excluir_index = i
-
-    # Total geral (adicionado como linha da tabela)
     total_row = pd.DataFrame({
         col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["Total Geral"] for col in df_final.columns
     })
     df_tabela = pd.concat([df_final, total_row], ignore_index=True)
 
-    st.subheader("📋 Detalhamento do custo por colaborador")
     df_formatado = df_tabela.copy()
     for col in df_formatado.columns:
         if df_formatado[col].dtype in ["float64", "int64"]:
@@ -161,7 +141,6 @@ if st.session_state.colaboradores:
                 lambda x: f"R${x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
             )
 
-    # Deixa linha de Total Geral em negrito
     def highlight_total(s):
         return ['font-weight: bold' if s.name == len(df_formatado) - 1 else '' for _ in s]
 
