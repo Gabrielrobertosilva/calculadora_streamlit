@@ -13,6 +13,15 @@ if "colaboradores" not in st.session_state:
 if "excluir_index" not in st.session_state:
     st.session_state.excluir_index = -1
 
+# Executa exclusão fora do loop
+if st.session_state.excluir_index != -1:
+    st.session_state.colaboradores = [
+        colab for idx, colab in enumerate(st.session_state.colaboradores)
+        if idx != st.session_state.excluir_index
+    ]
+    st.session_state.excluir_index = -1
+    st.rerun()
+
 # Carrega nomes sugeridos do Excel externo
 try:
     nomes_df = pd.read_excel("lista_nomes.xlsx")
@@ -133,12 +142,6 @@ if st.session_state.colaboradores:
         with col2:
             if st.button("➖", key=f"del_{i}"):
                 st.session_state.excluir_index = i
-
-    if st.session_state.excluir_index != -1:
-        df_final = df_final.drop(index=st.session_state.excluir_index).reset_index(drop=True)
-        st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
-        st.session_state.excluir_index = -1
-        st.experimental_rerun()
 
     # Total geral (adicionado como linha da tabela)
     total_row = pd.DataFrame({
