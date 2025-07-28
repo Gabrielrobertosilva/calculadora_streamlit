@@ -10,6 +10,8 @@ st.title("💼 Calculadora de Custo do Colaborador")
 # Inicializa a sessão
 if "colaboradores" not in st.session_state:
     st.session_state.colaboradores = []
+if "excluir_index" not in st.session_state:
+    st.session_state.excluir_index = -1
 
 # Carrega nomes sugeridos do Excel externo
 try:
@@ -121,7 +123,7 @@ if st.session_state.colaboradores:
     df_final = pd.concat([df_base, df_detalhado], axis=1)
 
     # Exclusão segura com controle
-    excluir_index = st.session_state.get("excluir_index", -1)
+    excluir_index = st.session_state.excluir_index
     manter_indices = []
     for i in df_final.index:
         col1, col2 = st.columns([6, 1])
@@ -132,17 +134,18 @@ if st.session_state.colaboradores:
             )
         with col2:
             if st.button("➖", key=f"del_{i}"):
-                excluir_index = i
+                st.session_state.excluir_index = i
+                st.experimental_rerun()
 
-    if excluir_index != -1:
-        df_final = df_final.drop(index=excluir_index).reset_index(drop=True)
+    if st.session_state.excluir_index != -1:
+        df_final = df_final.drop(index=st.session_state.excluir_index).reset_index(drop=True)
         st.session_state.colaboradores = df_final[["Nome", "Salário Base", "Ajuste (%)"]].to_dict(orient="records")
         st.session_state.excluir_index = -1
         st.experimental_rerun()
 
     # Total geral (adicionado como linha da tabela)
     total_row = pd.DataFrame({
-        col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["**Total Geral**"] for col in df_final.columns
+        col: [df_final[col].sum()] if df_final[col].dtype in ["float64", "int64"] else ["Total Geral"] for col in df_final.columns
     })
     df_tabela = pd.concat([df_final, total_row], ignore_index=True)
 
@@ -153,7 +156,12 @@ if st.session_state.colaboradores:
             df_formatado[col] = df_formatado[col].apply(
                 lambda x: f"R${x:,.2f}" if pd.notnull(x) and isinstance(x, (int, float)) else x
             )
-    st.dataframe(df_formatado, use_container_width=True)
+
+    # Deixa linha de Total Geral em negrito
+    def highlight_total(s):
+        return ['font-weight: bold' if s.name == len(df_formatado) - 1 else '' for _ in s]
+
+    st.dataframe(df_formatado.style.apply(highlight_total, axis=1), use_container_width=True)
 
     # Gráfico
     st.subheader("📊 Distribuição do custo total da equipe")
